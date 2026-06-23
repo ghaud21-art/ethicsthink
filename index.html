@@ -157,6 +157,19 @@ header{ background:var(--org); }
   .sides,.two{ grid-template-columns:1fr; }
   .bubble{ max-width:88%; }
 }
+/* footer */
+.siteFooter{ background:#f8f7fa; border-top:1px solid #eee; padding:28px 0; margin-top:40px; }
+.footerInner{ max-width:1080px; margin:0 auto; padding:0 20px; display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; }
+.footerLinks{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+.footerLinks a{ color:#888; font-size:13px; text-decoration:none; font-weight:700; }
+.footerLinks a:hover{ color:var(--org); }
+.footerCopy{ color:#bbb; font-size:12px; }
+.policyModal{ position:fixed; inset:0; background:rgba(20,15,25,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+.policyBox{ background:#fff; border-radius:20px; padding:28px; width:100%; max-width:640px; max-height:80vh; overflow-y:auto; }
+.policyBox h2{ font-size:20px; font-weight:800; margin:0 0 16px; }
+.policyBox h3{ font-size:15px; font-weight:800; margin:20px 0 8px; color:#333; }
+.policyBox p{ font-size:14px; line-height:1.8; color:#555; margin:0 0 10px; }
+.policyBox .closeBtn{ float:right; background:none; border:none; font-size:22px; cursor:pointer; color:#999; margin-top:-4px; }
 </style>
 </head>
 <body>
@@ -728,6 +741,75 @@ function loadTopicsAndGo(screen){
   });
 }
 loadTopicsAndGo('home');
+</script>
+
+<!-- 사이트 푸터 -->
+<footer class="siteFooter">
+  <div class="footerInner">
+    <div class="footerLinks">
+      <a href="#" onclick="openPolicy('terms');return false;">이용약관</a>
+      <a href="#" onclick="openPolicy('privacy');return false;">개인정보처리방침</a>
+      <a href="mailto:ethicsthink@gmail.com">문의하기</a>
+    </div>
+    <p class="footerCopy">© 2026 생각하는 힘을 키우는 토론장 · EthicsThink · 제작: 지니쌤</p>
+  </div>
+</footer>
+
+<!-- 이용약관 / 개인정보처리방침 모달 -->
+<div id="policyRoot"></div>
+
+<script>
+var POLICIES = {
+  terms: {
+    title: '이용약관',
+    content: [
+      { h: '제1조 (목적)', p: '이 약관은 생각하는 힘을 키우는 토론장(이하 "서비스")의 이용 조건 및 절차, 이용자와 운영자의 권리·의무를 규정함을 목적으로 합니다.' },
+      { h: '제2조 (서비스 이용)', p: '서비스는 교육 목적으로 제공되며, 교사는 클래스를 개설하고 학생은 교사로부터 클래스 코드를 받아 참여할 수 있습니다. 서비스는 Google Apps Script, Firebase, Gemini API를 기반으로 운영됩니다.' },
+      { h: '제3조 (이용자의 의무)', p: '이용자는 서비스를 교육 목적 외의 용도로 사용하거나 타인의 권리를 침해하는 행위를 하여서는 안 됩니다. 교사는 본인의 Gemini API 키를 직접 등록하며, API 사용에 따른 비용은 이용자 본인이 부담합니다.' },
+      { h: '제4조 (서비스 변경 및 중단)', p: '운영자는 서비스의 내용을 변경하거나 중단할 수 있으며, 이 경우 사전에 공지합니다. 다만 불가피한 경우 사후에 공지할 수 있습니다.' },
+      { h: '제5조 (면책)', p: '운영자는 천재지변, 시스템 장애, API 서비스 중단 등 불가항력으로 인한 서비스 중단에 대해 책임을 지지 않습니다. AI가 생성한 토론 답변의 정확성에 대해 운영자는 보증하지 않습니다.' },
+      { h: '제6조 (준거법)', p: '이 약관은 대한민국 법령에 따라 해석되며, 서비스 이용과 관련한 분쟁은 대한민국 법원을 관할 법원으로 합니다.' },
+      { h: '부칙', p: '이 약관은 2026년 6월 23일부터 시행됩니다.' }
+    ]
+  },
+  privacy: {
+    title: '개인정보처리방침',
+    content: [
+      { h: '1. 수집하는 개인정보 항목', p: '서비스는 다음과 같은 정보를 수집합니다.
+· 교사: 이메일 주소, 비밀번호(암호화 저장), Gemini API 키(암호화 저장)
+· 학생: 학번, 이름, PIN 번호(암호화 저장), 소속 클래스 코드
+· 이용 기록: AI 토론 대화 내용, 교사 피드백' },
+      { h: '2. 개인정보의 수집 및 이용 목적', p: '수집한 개인정보는 다음 목적으로만 사용합니다.
+· 회원 식별 및 로그인 처리
+· 토론 기록 저장 및 교사 피드백 제공
+· 서비스 품질 개선' },
+      { h: '3. 개인정보의 보유 및 이용 기간', p: '이용자의 개인정보는 서비스 탈퇴 시 또는 수집·이용 목적이 달성된 후 즉시 파기합니다. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.' },
+      { h: '4. 개인정보의 제3자 제공', p: '서비스는 이용자의 개인정보를 원칙적으로 제3자에게 제공하지 않습니다. 단, AI 토론 기능을 위해 대화 내용이 Google Gemini API로 전송되며, 이는 Google의 개인정보처리방침을 따릅니다.' },
+      { h: '5. 개인정보 보호를 위한 기술적 조치', p: '비밀번호 및 PIN은 SHA-256으로 암호화되어 저장됩니다. 모든 데이터는 Google Firebase(Firestore)에 저장되며, Firebase의 보안 규칙에 따라 보호됩니다.' },
+      { h: '6. 이용자의 권리', p: '이용자는 언제든지 자신의 개인정보 조회, 수정, 삭제를 요청할 수 있습니다. 문의: zsq123@naver.com' },
+      { h: '7. 개인정보처리방침 변경', p: '이 방침은 법령 및 서비스 변경에 따라 수정될 수 있으며, 변경 시 서비스 내 공지를 통해 안내합니다.
+
+시행일: 2026년 6월 23일' }
+    ]
+  }
+};
+
+function openPolicy(type) {
+  var p = POLICIES[type];
+  var root = document.getElementById('policyRoot');
+  var content = p.content.map(function(item){
+    return '<h3>' + item.h + '</h3><p>' + item.p.replace(/
+/g,'<br>') + '</p>';
+  }).join('');
+  root.innerHTML = '<div class="policyModal" id="pmOv"><div class="policyBox">'
+    + '<button class="closeBtn" onclick="closePolicy()">×</button>'
+    + '<h2>' + p.title + '</h2>'
+    + content
+    + '<div style="text-align:center;margin-top:24px"><button class="primary" onclick="closePolicy()">닫기</button></div>'
+    + '</div></div>';
+  root.querySelector('#pmOv').onclick = function(e){ if(e.target===this) closePolicy(); };
+}
+function closePolicy(){ document.getElementById('policyRoot').innerHTML = ''; }
 </script>
 </body>
 </html>
