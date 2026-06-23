@@ -164,14 +164,15 @@ header{ background:var(--org); }
 
 <script>
 /* ===== 서버 호출 ===== */
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzMYIzm2iiqepfz_7K3kVx9mRQMjmE2EOnDKK71_EEblMecTciSEJPnZt11NFS6d-aP/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyipNYVwMqJnWva8rBsrVJafolx3KFP9MG-Oajr-pwbCwYrNmKu2jhJb2hfKb8RM6dT/exec';
 
 function call(fn){
   var args=[].slice.call(arguments,1);
-  return fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fn: fn, args: args })
+  // GAS CORS 우회: GET + callback(JSONP 방식 대신 no-cors 없이 GET으로)
+  var params = 'fn=' + encodeURIComponent(fn) + '&args=' + encodeURIComponent(JSON.stringify(args));
+  return fetch(GAS_URL + '?' + params, {
+    method: 'GET',
+    redirect: 'follow'
   }).then(function(r){
     if(!r.ok) throw new Error('서버 오류: ' + r.status);
     return r.json();
