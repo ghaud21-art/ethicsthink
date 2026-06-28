@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ethicsthink.app",
+    "sha256_cert_fingerprints": [
+      "93:25:EE:FB:56:93:C8:37:06:36:C6:F8:DA:32:F9:FF:45:CB:AF:C0:FA:19:10:50:F0:75:40:6A:2F:78:70:94"
+    ]
+  }
+}]
