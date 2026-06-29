@@ -641,20 +641,23 @@ function openLogin(after){
       root.querySelector('#tTabLogin').style.cssText='flex:1;padding:9px;border:none;background:#f3f1f5;color:#888;border-radius:10px;font-weight:800;cursor:pointer';
       root.querySelector('#tTabReg').style.cssText='flex:1;padding:9px;border:none;background:var(--org);color:#fff;border-radius:10px;font-weight:800;cursor:pointer';
       tInner.innerHTML='<h3>교사 회원가입</h3>'
-        +'<p class="hint">가입 시 클래스 코드가 자동 발급됩니다.</p>'
+        +'<p class="hint">가입 시 클래스 코드가 자동 발급됩니다.<br>'
+        +'① 구글 시트 새로 만들기 → ② 공유 설정: <b>링크가 있는 모든 사용자 - 편집자</b> → ③ URL에서 시트 ID 복사</p>'
         +'<input id="tRegEmail" placeholder="이메일">'
         +'<input id="tRegPw" type="password" placeholder="비밀번호">'
-        +'<input id="tRegKey" placeholder="Gemini API 키 (본인 키 입력)">'
+        +'<input id="tRegKey" placeholder="Gemini API 키">'
+        +'<input id="tRegSheet" placeholder="구글 시트 ID (/d/ 다음 긴 문자열)">'
         +'<p class="err" id="tRegErr"></p>'
         +'<button class="primary full" id="tRegBtn">가입하기</button>';
       tInner.querySelector('#tRegBtn').onclick=function(){
         var email=tInner.querySelector('#tRegEmail').value;
         var pw=tInner.querySelector('#tRegPw').value;
         var key=tInner.querySelector('#tRegKey').value;
-        if(!email||!pw||!key){tInner.querySelector('#tRegErr').textContent='모든 항목을 입력하세요.';return;}
+        var sheetId=tInner.querySelector('#tRegSheet').value.trim();
+        if(!email||!pw||!key||!sheetId){tInner.querySelector('#tRegErr').textContent='모든 항목을 입력하세요.';return;}
         tInner.querySelector('#tRegBtn').disabled=true;
         tInner.querySelector('#tRegBtn').textContent='처리 중…';
-        call('apiTeacherRegister',email,pw,key).then(function(r){
+        call('apiTeacherRegister',email,pw,key,sheetId).then(function(r){
           if(!r.ok){tInner.querySelector('#tRegErr').textContent=r.error;tInner.querySelector('#tRegBtn').disabled=false;tInner.querySelector('#tRegBtn').textContent='가입하기';return;}
           close();
           showClassCodeModal(r.classCode);
