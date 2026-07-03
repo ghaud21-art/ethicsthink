@@ -182,36 +182,34 @@ header{ background:var(--org); }
 <div id="modalRoot"></div>
 
 <script>
-/* ===== 서버 호출 ===== */
-var GAS_URL = 'https://script.google.com/macros/s/AKfycby7kL5KnanHLD58mZy6nUN6xNS4QgGrf-Aj74nGqcDiYtDA-7huFMJhOMejFg1NJK0JIg/exec';
+/* ===== 서버 호출 =====
+   v6: JSONP(GET, URL에 데이터 실음) → POST(body에 데이터 실음)로 변경.
+   이유: apiSendMessage는 대화 기록 전체를 함께 보내는데, 대화가
+   길어질수록 URL이 계속 늘어나다가 브라우저의 URL 길이 한도를 넘어
+   요청 자체가 실패하는 문제가 있었음("지금은 연결이 원활하지 않네").
+   POST는 데이터를 요청 본문(body)에 담기 때문에 이 제한이 없음.
+   Code.gs의 doPost는 이미 JSON.parse(e.postData.contents)로
+   { fn, args } 형태를 그대로 받도록 구현되어 있어 백엔드 수정 불필요.
+*/
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwhgD-WABWGyh08nX2uvHX5FR8deUygg2Lgy0GmL346S0zm5wHAp1L5mHzWYTErkHkQEg/exec';
 
 function call(fn){
-  var args=[].slice.call(arguments,1);
-  return new Promise(function(resolve, reject){
-    // JSONP 방식으로 CORS 우회
-    var cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
-    var script = document.createElement('script');
-    var timer = setTimeout(function(){
-      cleanup();
-      reject(new Error('요청 시간 초과'));
-    }, 30000);
-    function cleanup(){
-      clearTimeout(timer);
-      delete window[cbName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(data){
-      cleanup();
-      if(data && data.__error) reject(new Error(data.__error));
-      else resolve(data);
-    };
-    var params = 'fn=' + encodeURIComponent(fn)
-      + '&args=' + encodeURIComponent(JSON.stringify(args))
-      + '&callback=' + cbName;
-    script.src = GAS_URL + '?' + params;
-    script.onerror = function(){ cleanup(); reject(new Error('네트워크 오류')); };
-    document.head.appendChild(script);
-  });
+  var args = [].slice.call(arguments, 1);
+  return fetch(GAS_URL, {
+    method: 'POST',
+    // Content-Type을 지정하지 않으면 브라우저가 text/plain으로 보내
+    // "단순 요청(simple request)"이 되어 CORS 프리플라이트(OPTIONS)를
+    // 건너뛴다. GAS 쪽에 doOptions가 없어도 문제 없이 동작하는 이유.
+    body: JSON.stringify({ fn: fn, args: args })
+  })
+    .then(function(res){
+      if (!res.ok) throw new Error('서버 오류 (HTTP ' + res.status + ')');
+      return res.json();
+    })
+    .then(function(data){
+      if (data && data.__error) throw new Error(data.__error);
+      return data;
+    });
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];}); }
 function grad(c){ return 'linear-gradient(135deg,'+(c&&c[0]||'#ccc')+','+(c&&c[1]||'#999')+')'; }
@@ -333,6 +331,8 @@ function startChat(){
       S.challenge=null;
     }
     renderChat();
+  }).catch(function(err){
+    view.innerHTML='<p class="muted">토론을 시작하지 못했어요: '+esc(err.message)+'</p>';
   });
 }
 function renderChat(){
@@ -363,11 +363,14 @@ function renderChat(){
       th.scrollTop=th.scrollHeight;
       view.querySelector('#send').disabled=true;
       call('apiSendMessage',S.user.classCode,S.sessionId,S.topic.id,S.thinker.name,S.messages,S.userTurns).then(function(r){
-        S.messages.push({role:'assistant',content:(r&&r.ok)?r.reply:'지금은 연결이 원활하지 않네. 잠시 후 다시 물어봐 주게.'});
+        S.messages.push({role:'assistant',content:(r&&r.ok)?r.reply:((r&&r.reply)||'지금은 연결이 원활하지 않네. 잠시 후 다시 물어봐 주게.')});
         S.userTurns+=1;
         if(S.userTurns%4===0) S.challenge=CHALLENGES[(S.userTurns/4-1)%CHALLENGES.length];
         renderChat();
-      }).catch(function(){ S.messages.push({role:'assistant',content:'지금은 연결이 원활하지 않네.'}); renderChat(); });
+      }).catch(function(err){
+        S.messages.push({role:'assistant',content:'지금은 연결이 원활하지 않네. ('+err.message+')'});
+        renderChat();
+      });
     }
     btn.onclick=send;
     input.onkeydown=function(e){ if(e.key==='Enter'){e.preventDefault();send();} };
@@ -763,7 +766,6 @@ function loadTopicsAndGo(screen){
   });
 }
 loadTopicsAndGo('home');
-</script>
 </script>
 
 <footer class="siteFooter">
