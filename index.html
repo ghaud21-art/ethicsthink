@@ -1,6 +1,6 @@
 <!-- 카카오톡/SNS 미리보기 -->
 <meta property="og:title" content="윤리 토론장" />
-<meta property="og:description" content="생각하는 힘을 키우는 토론장" />
+<meta property="og:description" content="윤리 토론장" />
 <meta property="og:image" content="https://ghaud21-art.github.io/ethicsthink/미리보기이미지.png" />
 <meta property="og:url" content="https://ghaud21-art.github.io/ethicsthink/" />
 <!DOCTYPE html>
@@ -429,13 +429,16 @@ function renderAdmin(){
     view.innerHTML='<h1 class="pageTitle">교사 대시보드</h1>'
       +'<div class="classCodeBadge" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'
       +'<div><div class="label">내 클래스 코드 (학생에게 공유하세요)</div><div class="code">'+esc(S.teacher.classCode)+'</div></div>'
-      +'<button class="primary" id="shareCode2">📢 공유하기</button></div>'
+      +'<div style="display:flex;gap:8px"><button class="lite" id="teacherSettingsBtn">⚙️ 설정</button>'
+      +'<button class="primary" id="shareCode2">📢 공유하기</button></div></div>'
       +'<div class="adminGrid"><div class="sListWrap">'
       +'<input class="sSearch" id="sSearch" placeholder="이름 또는 학번 검색 ('+students.length+'명)">'
       +'<div class="sList" id="sList"></div></div>'
       +'<div class="panel" id="panel"><p class="muted">왼쪽에서 학생을 선택하세요.</p></div></div>';
     var sc2 = view.querySelector('#shareCode2');
     if(sc2) sc2.onclick = function(){ showClassCodeFromDashboard(S.teacher.classCode); };
+    var tsBtn = view.querySelector('#teacherSettingsBtn');
+    if(tsBtn) tsBtn.onclick = openTeacherSettings;
 
     var listEl = view.querySelector('#sList');
     var selectedSid = null;
@@ -719,6 +722,79 @@ function openLogin(after){
   root.querySelector('#tabS').onclick=studentTab;
   root.querySelector('#tabT').onclick=teacherTab;
   studentTab();
+}
+
+/* ===== 교사 계정 설정 (API 키 / 시트ID 변경) ===== */
+function openTeacherSettings(){
+  var root=document.getElementById('modalRoot');
+  root.innerHTML='<div class="overlay" id="tsOv"><div class="modal" id="tsMd" style="max-width:440px">'
+    +'<h3 style="margin:0 0 6px">⚙️ 계정 설정</h3>'
+    +'<p class="hint">Gemini API 키나 구글 시트를 바꾸고 싶을 때 사용하세요. 비워두면 그 항목은 그대로 유지됩니다.</p>'
+    +'<div id="tsBody"><p class="muted">불러오는 중…</p></div>'
+    +'</div></div>';
+  root.querySelector('#tsOv').onclick=function(e){ if(e.target===root.querySelector('#tsOv')) root.innerHTML=''; };
+  root.querySelector('#tsMd').onclick=function(e){ e.stopPropagation(); };
+
+  call('apiGetTeacherSettings', S.teacher.classCode).then(function(r){
+    var body = root.querySelector('#tsBody');
+    if (!r || !r.ok) {
+      body.innerHTML = '<p class="err">설정을 불러오지 못했어요.'+(r&&r.error?' ('+esc(r.error)+')':'')+'</p>'
+        +'<button class="lite full" id="tsClose">닫기</button>';
+      root.querySelector('#tsClose').onclick=function(){ root.innerHTML=''; };
+      return;
+    }
+    body.innerHTML =
+      '<div class="field"><label>현재 Gemini API 키</label>'
+        +'<input value="'+esc(r.geminiKeyMasked||'(등록된 키 없음)')+'" disabled></div>'
+      +'<div class="field"><label>새 Gemini API 키 (변경 시에만 입력)</label>'
+        +'<input id="tsNewKey" placeholder="AIzaSy... (비워두면 유지)"></div>'
+      +'<div class="field" style="margin-top:6px"><label>현재 구글 시트 ID</label>'
+        +'<input value="'+esc(r.sheetId||'(등록된 시트 없음)')+'" disabled></div>'
+      +'<div class="field"><label>새 구글 시트 ID (변경 시에만 입력)</label>'
+        +'<input id="tsNewSheet" placeholder="/d/ 다음의 긴 문자열 (비워두면 유지)"></div>'
+      +'<p class="hint" style="margin:-4px 0 12px">시트를 바꾸면 새 시트에 학생/토론기록/피드백 탭이 자동으로 만들어져요. 반드시 "링크가 있는 모든 사용자 - 편집자"로 공유해주세요.</p>'
+      +'<p class="err" id="tsErr"></p>'
+      +'<div class="saveRow">'
+        +'<button class="primary" id="tsSave">저장하기</button>'
+        +'<span class="saveMsg" id="tsMsg"></span>'
+      +'</div>'
+      +'<button class="lite full" style="margin-top:10px" id="tsClose">닫기</button>';
+
+    root.querySelector('#tsClose').onclick=function(){ root.innerHTML=''; };
+    root.querySelector('#tsSave').onclick=function(){
+      var newKey = root.querySelector('#tsNewKey').value.trim();
+      var newSheet = root.querySelector('#tsNewSheet').value.trim();
+      var errEl = root.querySelector('#tsErr'), msgEl = root.querySelector('#tsMsg');
+      errEl.textContent=''; msgEl.textContent='';
+      if (!newKey && !newSheet){ errEl.textContent='변경할 항목을 하나 이상 입력하세요.'; return; }
+      var btn = root.querySelector('#tsSave');
+      btn.disabled=true; btn.textContent='저장 중…';
+      call('apiUpdateTeacherSettings', S.teacher.classCode, newKey, newSheet).then(function(res){
+        btn.disabled=false; btn.textContent='저장하기';
+        if (!res || !res.ok){ errEl.textContent = (res&&res.error)||'저장 실패'; return; }
+        msgEl.textContent = '저장됐어요!';
+        root.querySelector('#tsNewKey').value='';
+        root.querySelector('#tsNewSheet').value='';
+        // 화면에 표시된 마스킹 값 갱신
+        openTeacherSettingsRefresh_();
+      }).catch(function(err){
+        btn.disabled=false; btn.textContent='저장하기';
+        errEl.textContent = err.message;
+      });
+    };
+  }).catch(function(err){
+    root.querySelector('#tsBody').innerHTML = '<p class="err">'+esc(err.message)+'</p>';
+  });
+}
+function openTeacherSettingsRefresh_(){
+  call('apiGetTeacherSettings', S.teacher.classCode).then(function(r){
+    if (!r || !r.ok) return;
+    var root=document.getElementById('modalRoot');
+    var keyInput = root.querySelector('#tsBody .field:nth-child(1) input');
+    var sheetInput = root.querySelector('#tsBody .field:nth-child(3) input');
+    if (keyInput) keyInput.value = r.geminiKeyMasked || '(등록된 키 없음)';
+    if (sheetInput) sheetInput.value = r.sheetId || '(등록된 시트 없음)';
+  });
 }
 
 /* ===== 클래스 코드 모달 ===== */
