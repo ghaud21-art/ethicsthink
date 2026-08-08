@@ -5,7 +5,8 @@
     "package_name": "com.ethicsthink.app",
     "sha256_cert_fingerprints": [
       "C5:19:36:47:8F:1B:39:7F:BA:90:3E:ED:DA:D6:D8:18:10:28:6A:D9:4F:16:B5:48:CF:A2:F8:F8:F1:25:4D:5D",
-      "93:25:EE:FB:56:93:C8:37:06:36:C6:F8:DA:32:F9:FF:45:CB:AF:C0:FA:19:10:50:F0:75:40:6A:2F:78:70:94"
+      "93:25:EE:FB:56:93:C8:37:06:36:C6:F8:DA:32:F9:FF:45:CB:AF:C0:FA:19:10:50:F0:75:40:6A:2F:78:70:94",
+      "8C:08:99:1F:BF:31:2D:6E:7F:1C:82:BD:00:0C:27:C8:54:AE:B1:3F:08:F6:AC:BF:F1:03:DF:52:D7:9D:52:C6"
     ]
   }
 }]
