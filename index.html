@@ -301,10 +301,13 @@ function renderHome(){
       +'<div class="thumb" style="background:'+grad(t.colors)+'"><span class="thumbCount">사상가 '+t.thinkers.length+'명</span></div>'
       +'<div class="cardBody"><h3 class="cardTitle">'+esc(t.title)+'</h3><p class="cardBlurb">'+esc(t.blurb)+'</p></div></button>';
   }).join('');
-  view.innerHTML='<section class="hero"><p class="eyebrow">사상가와 마주 앉아</p>'
+  var backBtn=S.teacher?'<button class="back" id="bkAdmin">← 대시보드로 돌아가기</button>':'';
+  view.innerHTML=backBtn+'<section class="hero"><p class="eyebrow">사상가와 마주 앉아</p>'
     +'<h1 class="heroTitle">질문하고, 따져 묻고, 생각을 키우다</h1>'
     +'<p class="heroSub">주제를 고르면 그 문제를 두고 동·서양 사상가들이 기다립니다. 마음에 드는 한 사람을 골라 토론을 시작하세요.</p></section>'
     +'<h2 class="sectionTitle">토론 주제</h2><div class="grid">'+cards+'</div>';
+  var bkAdmin=view.querySelector('#bkAdmin');
+  if(bkAdmin) bkAdmin.onclick=function(){ S.user=null; go('admin'); };
   [].forEach.call(view.querySelectorAll('.card'),function(b){
     b.onclick=function(){ S.topic=S.topics.filter(function(t){return t.id===b.dataset.id;})[0]; go('topic'); };
   });
@@ -330,7 +333,10 @@ function renderTopic(){
   [].forEach.call(view.querySelectorAll('.thinkerCard .primary'),function(b){
     b.onclick=function(){
       S.thinker=t.thinkers[+b.dataset.i];
-      if(!S.user){ openLogin(function(){ startChat(); }); } else { startChat(); }
+      if(S.teacher && !S.user){
+        S.user={ sid:'TEST-'+S.teacher.classCode, name:'교사(테스트)', classCode:S.teacher.classCode };
+        startChat();
+      } else if(!S.user){ openLogin(function(){ startChat(); }); } else { startChat(); }
     };
   });
 }
@@ -453,6 +459,7 @@ function renderAdmin(){
       +'<div class="classCodeBadge" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'
       +'<div><div class="label">내 클래스 코드 (학생에게 공유하세요)</div><div class="code">'+esc(S.teacher.classCode)+'</div></div>'
       +'<div style="display:flex;gap:8px"><button class="lite" id="teacherSettingsBtn">⚙️ 설정</button>'
+      +'<button class="lite" id="testModeBtn">🧪 학생처럼 참여해보기</button>'
       +'<button class="primary" id="shareCode2">📢 공유하기</button></div></div>'
       +'<div class="adminGrid"><div class="sListWrap">'
       +'<input class="sSearch" id="sSearch" placeholder="이름 또는 학번 검색 ('+students.length+'명)">'
@@ -462,6 +469,8 @@ function renderAdmin(){
     if(sc2) sc2.onclick = function(){ showClassCodeFromDashboard(S.teacher.classCode); };
     var tsBtn = view.querySelector('#teacherSettingsBtn');
     if(tsBtn) tsBtn.onclick = openTeacherSettings;
+    var tmBtn = view.querySelector('#testModeBtn');
+    if(tmBtn) tmBtn.onclick = function(){ S.user=null; go('home'); };
 
     var listEl = view.querySelector('#sList');
     var selectedSid = null;
